@@ -1,0 +1,7 @@
+node_modules
+.next
+probe-logs
+
+# written by `next dev` itself (generate-agent-files.js), not part of the repro
+AGENTS.md
+CLAUDE.md
