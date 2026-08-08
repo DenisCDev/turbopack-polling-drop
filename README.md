@@ -7,6 +7,8 @@ watcher, running the identical edit pattern on the same machine, loses none.
 Measured on **native Windows only** — win32/x64, Windows 11, Node 22.22.0,
 `next@16.3.1-canary.8`. macOS and Linux were not tested.
 
+Filed as https://github.com/vercel/next.js/issues/96982
+
 ## Run it
 
 ```bash
