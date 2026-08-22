@@ -1,5 +1,7 @@
 # Turbopack polling watcher permanently drops file edits on Windows
 
+> **[Leia em Português](#portugues)**
+
 A minimal App Router app and one script. With `watchOptions.pollIntervalMs`
 set, `next dev` silently and permanently loses file edits. The platform's native
 watcher, running the identical edit pattern on the same machine, loses none.
@@ -146,3 +148,100 @@ asked how to enable polling at all and was closed by #96440, merged
 2026-08-07 22:40 UTC — 44 minutes before `v16.3.1-canary.8` was tagged. So the
 build measured here **contains** that fix. (#96288 addressed the same area but
 was closed unmerged, superseded by #96440; its code is not in this build.)
+
+---
+
+<a id="portugues"></a>
+
+# O watcher de polling do Turbopack perde edições permanentemente no Windows (PT-BR)
+
+Um app App Router mínimo e um script. Com `watchOptions.pollIntervalMs`
+configurado, o `next dev` perde edições de arquivo de forma silenciosa e
+permanente. O watcher nativo da plataforma, rodando o padrão de edição
+idêntico na mesma máquina, não perde nenhuma.
+
+Medido **apenas em Windows nativo** — win32/x64, Windows 11, Node 22.22.0,
+`next@16.3.1-canary.8`. macOS e Linux não foram testados.
+
+Reportado em https://github.com/vercel/next.js/issues/96982
+
+## Como rodar
+
+```bash
+npm install
+
+# watcher de polling
+POLL_MS=1000 SESSIONS=5 EDITS=5 npm run probe
+
+# mesmo padrão de edição, watcher nativo, como controle
+POLL_MS=0 SESSIONS=5 EDITS=5 npm run probe
+```
+
+PowerShell: `$env:POLL_MS="1000"; $env:SESSIONS="5"; $env:EDITS="5"; node probe.mjs`
+
+Cada sessão remove o `.next`, sobe um `next dev` limpo, reescreve `lib/mod.ts`
+`EDITS` vezes e registra quanto tempo até a página servida refletir cada valor
+novo — ou `X` se nunca refletiu dentro de `WINDOW_MS` (padrão 8000 ms, oito
+intervalos completos de poll). A saída do dev server fica salva por sessão em
+`probe-logs/`.
+
+## Resultados
+
+Os blocos numéricos estão na seção em inglês acima — mesmos dados. Resumo:
+com polling de 1000 ms, 22/25 edições detectadas (rodadas repetidas deram
+15/25 e 20/25); com o watcher nativo, 25/25 em todas as rodadas.
+
+**A escrita chega ao disco.** O probe consulta o arquivo antes e depois de cada
+escrita: o mtime avançou em 25/25, inclusive em todas as edições perdidas. Uma
+variante que variava o tamanho do arquivo a cada escrita também perdeu edições,
+então tamanho não é o discriminador.
+
+**A perda é permanente, não lenta.** Com `WINDOW_MS=90000` — noventa intervalos
+de poll — a edição perdida continua perdida (8/9 no bloco da seção em inglês).
+
+## O formato: acompanha a latência de detecção, por edição
+
+As perdas não se distribuem ao acaso: seguem a latência da edição *anterior*.
+Enquanto uma edição é refletida em ~200–800 ms — mais rápido que o intervalo
+configurado de 1000 ms, portanto aparentemente não é o tick do poll — a edição
+seguinte tende a se perder. Quando a latência assenta em ~1000 ms, as perdas
+param pelo resto da sessão. Inserir tempo ocioso entre edições (`GAP_MS`)
+reduz as perdas pelo mesmo motivo: empurra o espaçamento para fora desse
+regime.
+
+Isso é reportado como correlação. O que detecta uma mudança em 200 ms com
+polling ligado não foi identificado.
+
+## `watch error` só no braço com polling
+
+O dev server loga, por sessão, sete falhas ao estabelecer watch (código 2/3 do
+SO, caminhos em `src`, `.next-internal`, `node_modules`) — **zero** no braço
+nativo. Nenhum dos caminhos é o arquivo editado, que existe e é observado;
+pode não ter relação — está registrado por ser a única assimetria visível de
+fora do Turbopack.
+
+## O que isto não estabelece
+
+O probe só observa que o dev server nunca serve o valor novo. Não distingue um
+evento de watcher que nunca foi emitido de um emitido e não processado. Não há
+instrumentação dentro do Turbopack aqui.
+
+Também é intermitente: uma rodada curta pode voltar limpa. As perdas
+reproduziram em todas as rodadas de 25 observações tentadas.
+
+## Por que edições em rajada não são um caso sintético
+
+Escritas em sequência são a saída normal de format-on-save, `git checkout` e
+`merge`, codemods e agentes de código de CLI que escrevem vários arquivos em
+rajada antes de pedir a página.
+
+## Contexto
+
+`watchOptions.pollIntervalMs` seleciona o `PollWatcher` do notify em vez do
+backend nativo da plataforma. É o fallback para ambientes onde watching nativo
+não funciona — Docker, WSL2, drives de rede, VMs.
+
+A opção é **não documentada**: aparece no `config-shared` sem JSDoc, está
+ausente de `next/dist/docs/`, e o PR de docs (#80687) está aberto desde
+2025-06-19. Falhas desse tipo foram relatadas em #68255 e #69684; o build
+medido aqui **contém** o fix do #96440 (detalhes na seção em inglês).
