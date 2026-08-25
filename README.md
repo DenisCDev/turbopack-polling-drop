@@ -1,5 +1,12 @@
 # Turbopack polling watcher permanently drops file edits on Windows
 
+<p align="center">
+  <img src="assets/mtg-lost-to-legend.jpg" width="640" alt="A legendary blade sinking among weeds and bubbles — art by Kasia Kafis Zielinska, Tales of Middle-earth (2023)">
+</p>
+
+> *"Lost to Legend"*, printed in Brazil as **"Perdido para as Lendas"**. Art by Kasia 'Kafis' Zielinska for **Magic: The Gathering**,
+> Tales of Middle-earth (2023). The blade sinks and does not come back. That is the bug.
+
 > **[Leia em Português](#portugues)**
 
 A minimal App Router app and one script. With `watchOptions.pollIntervalMs`
