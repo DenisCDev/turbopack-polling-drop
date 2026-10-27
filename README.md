@@ -1,5 +1,7 @@
 # Turbopack polling watcher permanently drops file edits on Windows
 
+**English** · [Português](README.pt-BR.md)
+
 <p align="center">
   <img src="assets/mtg-lost-to-legend.jpg" width="640" alt="A legendary blade sinking among weeds and bubbles — art by Kasia Kafis Zielinska, Tales of Middle-earth (2023)">
 </p>
